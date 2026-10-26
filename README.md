@@ -46,7 +46,17 @@ PM が考えている優先順位、先方の意向の受け止め方、うっ�
 
 ## 使い始める
 
-対象の repo のルートで、次を実行します（Node.js 22.20 以上）。
+対象の repo のルートで、次のどれかを実行します。どれも CLAUDE.md や AGENTS.md への追記は要りません。`.memory/` は、最初の記憶を書くときにエージェントが作ります。
+
+| 方法 | 対応するエージェント | 向いている場面 |
+|---|---|---|
+| 1. skills CLI | Claude Code・Codex ほか | チームで Claude Code と Codex を両方使う（おすすめ） |
+| 2. Claude Code の plugin マーケットプレイス | Claude Code | チーム全員が Claude Code だけを使う |
+| 3. 手作業 | Claude Code・Codex | npx も plugin も使えない |
+
+### 1. skills CLI
+
+Node.js 22.20 以上が必要です。
 
 ```sh
 npx skills add ibukimatsubara/team-memory -a claude-code -a codex -y
@@ -60,8 +70,19 @@ npx skills add ibukimatsubara/team-memory -a claude-code -a codex -y
 
 3つともコミットすれば、チーム全員のエージェントが使えます。新しい版は `npx skills update` で取り込めます。
 
-<details>
-<summary>npx を使わない場合</summary>
+### 2. Claude Code の plugin マーケットプレイス
+
+```sh
+claude plugin marketplace add ibukimatsubara/team-memory --scope project
+claude plugin install team-memory@team-memory --scope project
+```
+
+書き換わった `.claude/settings.json` をコミットします。チームの人がこの repo のフォルダを信頼すると、Claude Code がマーケットプレイスを登録し、plugin を有効にします。
+
+- スキルは `team-memory:team-memory` という名前で見えます。
+- Codex には入りません。
+
+### 3. 手作業
 
 ```sh
 git clone https://github.com/ibukimatsubara/team-memory.git /tmp/team-memory
@@ -70,9 +91,7 @@ cp -R /tmp/team-memory/skills/team-memory .agents/skills/
 ln -s ../../.agents/skills/team-memory .claude/skills/team-memory
 ```
 
-</details>
-
-CLAUDE.md や AGENTS.md への追記は要りません。`.memory/` は、最初の記憶を書くときにエージェントが作ります。
+`.agents/skills/team-memory` と `.claude/skills/team-memory` をコミットします。
 
 ## 動き
 
@@ -80,13 +99,17 @@ CLAUDE.md や AGENTS.md への追記は要りません。`.memory/` は、最初
 
 **書く**: 方針を決めたとき、実験を打ち切ったとき、PR を作る前に、エージェントが記憶を書きます。「記憶に残して」と頼むこともできます。PR にならずに捨てた試行も、記憶だけの PR で残します。開発者だけでなく、PM が決めた前提や見送った案も書けます。
 
+**方針が変わったら**: 同じ記憶の結論を書き換え、「経緯」に日付・以前の結論・変えた理由を1行足します。README や仕様書など、関係する repo の文書も同じ PR で直します。
+
+**増えてきたら**: INDEX の記憶が100件を超えたら、記憶を分野ごとのフォルダに分けます。上の INDEX は分野の一覧になります。統合した記憶や、対象がなくなった記憶は `archive/` に移します。INDEX で見つからないときは grep で探すので、膨大になっても探せます。整理は頼まれたときだけ行います。
+
 **資料にする**: 「今週の定例資料の節を .memory から作って」のように頼むと、結論と根拠を使って資料を作ります。内部メモ、作成者、Issue 番号は写しません。
 
 ## 記憶の形
 
 ```
 .memory/
-├── INDEX.md                                  # 今有効な記憶を1件1行で
+├── INDEX.md                                  # 今有効な記憶を1件1行で（100件を超えたら分野の一覧に）
 ├── 2026-10-20-fixed-threshold-rejected.md
 └── 2026-10-24-eval-set-expanded.md
 ```
@@ -111,11 +134,14 @@ related:
 ## 再検討の条件
 入力の濃さがそろう前処理が入った場合。
 
+## 経緯
+- 2026-10-20: 初めて記録。
+
 ## 内部メモ
 （社外の資料に出さない内部の呼び名や経緯）
 ```
 
-- 結論が変わったら、新しいファイルを書き、古いファイルを `superseded` にします。古い結論は書き換えません。
+- 方針が変わったら、同じファイルの結論を書き換え、`経緯` に変更を残します。
 - 結論は社外の人にも通じる言葉で書き、内部の呼び名は内部メモに分けます。
 - 作成者は、その repo のコミットと同じ GitHub アカウントにします。
 
@@ -128,8 +154,10 @@ related:
 - スキルを入れれば、CLAUDE.md・AGENTS.md に案内を書かなくても、関係する依頼では毎回記憶を読みました。
 - 関係のない依頼では、記憶をほとんど読みませんでした。
 - 定例資料を作らせたとき、作成者・Issue 番号・内部の呼び名は資料に出ませんでした。
+- 240件の記憶を分野に分けた repo でも、関係する分野の INDEX をたどって目的の記憶にたどり着き、全文を開いたのはその1件でした。
+- 方針転換を頼むと、ファイルを増やさずに結論を書き換え、経緯を追記しました。
 
-小さなサンプル repo での結果です。
+サンプル repo と、機械的に作った記憶での結果です。
 
 ## リポジトリの中身
 

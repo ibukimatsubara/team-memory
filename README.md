@@ -46,17 +46,31 @@ PM が考えている優先順位、先方の意向の受け止め方、うっ�
 
 ## 使い始める
 
-対象の repo のルートで、次を実行します。
+対象の repo のルートで、次を実行します（Node.js 22.20 以上）。
+
+```sh
+npx skills add ibukimatsubara/team-memory -a claude-code -a codex -y
+```
+
+[skills](https://github.com/vercel-labs/skills) CLI が、スキルを repo に入れます。
+
+- Codex 用: `.agents/skills/team-memory/` に本体を置く
+- Claude Code 用: `.claude/skills/team-memory` に symlink を張る
+- 更新の確認用: `skills-lock.json`
+
+3つともコミットすれば、チーム全員のエージェントが使えます。新しい版は `npx skills update` で取り込めます。
+
+<details>
+<summary>npx を使わない場合</summary>
 
 ```sh
 git clone https://github.com/ibukimatsubara/team-memory.git /tmp/team-memory
 mkdir -p .agents/skills .claude/skills
 cp -R /tmp/team-memory/skills/team-memory .agents/skills/
 ln -s ../../.agents/skills/team-memory .claude/skills/team-memory
-git add .agents/skills/team-memory .claude/skills/team-memory
 ```
 
-Codex は `.agents/skills/`、Claude Code は `.claude/skills/` からスキルを探します。正本を `.agents/skills/` に置き、Claude Code からは symlink で参照します。
+</details>
 
 CLAUDE.md や AGENTS.md への追記は要りません。`.memory/` は、最初の記憶を書くときにエージェントが作ります。
 

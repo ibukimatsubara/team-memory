@@ -1,0 +1,4 @@
+experiments/*/results/
+experiments/*/results-log.txt
+discussion/
+design/

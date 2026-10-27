@@ -1,9 +1,9 @@
-"""記憶の多い .memory/ を作る。
+"""Build a .memory/ with many memories (Japanese text).
 
-使い方: make_fixture.py <出力先> <split|flat100>
-- split: 6分野×40件＝240件。上の INDEX.md は分野の一覧、分野ごとに INDEX.md。
-- flat100: 分けていない INDEX.md にちょうど100件。
-どちらにも、trigger-test と同じ「固定しきい値の二値化は採用しない」を detection 分野に入れる。
+Usage: make_fixture.py <output dir> <split|flat100>
+- split: 6 areas x 40 = 240 memories. The top INDEX.md lists areas; each area has its own INDEX.md.
+- flat100: exactly 100 memories in one unsplit INDEX.md.
+Both include trigger-test's "fixed-threshold binarization rejected" memory in the detection area.
 """
 import pathlib
 import shutil

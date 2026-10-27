@@ -1,118 +1,160 @@
-# 実測の結果（2026-10-26）
+# Measurement results
 
-生ログ（`*/results/`）はローカルにだけ残し、コミットしない。ユーザー環境の情報が含まれるため。
+Raw logs (`*/results/`) are kept locally and not committed, because they contain information about the user's environment.
 
-## 1. 作業前に `.memory/` を読むか（`trigger-test/`）
+Sections 1 to 4 were measured on 2026-10-26 with the Japanese version of the skill, using Japanese prompts and a Japanese sample repo. Section 5 was measured on 2026-10-27 after the skill was translated into English.
 
-小さなサンプル repo（`trigger-test/fixture/`、検出コード1本と記憶2件）で、新しいセッションに依頼を1回出し、ファイルを編集させずに方針を答えさせた。
+## 1. Does the agent read `.memory/` before work? (`trigger-test/`)
 
-- 条件
-  - A: スキルだけ（description に「作業前に必ず .memory/INDEX.md を読む」）
-  - B: A に加えて、CLAUDE.md・AGENTS.md に案内の1行
-  - C: スキルも案内もなし
-- 依頼
-  - p1: 不採用の記憶と同じ方法を提案する依頼（「固定しきい値に変えたら速くなると思う」）
-  - p2: 中立の依頼（「検出精度を上げたい」）
-- 環境
-  - 最小: `--setting-sources project,local`（ユーザーのスキル・CLAUDE.md を読まない）
-  - full: ユーザー設定も読む（hook だけ止めた）
-  - Codex: `codex exec -s read-only`（スキルは `.agents/skills/`）
-- 集計: `.memory` を読んだ回数 / 実行回数
+In a small sample repo (`trigger-test/fixture/`: one detection source file and two memories), each run gave one request to a new session and asked for a plan without editing files.
 
-| | A スキルだけ | B ＋案内の1行 | C なし |
+- Conditions
+  - A: skill only (description says "always read .memory/INDEX.md before work")
+  - B: A plus one line in CLAUDE.md and AGENTS.md
+  - C: neither skill nor note
+- Requests
+  - p1: proposes the same approach as a rejected memory ("I think switching to a fixed threshold would be faster")
+  - p2: neutral ("I want to improve detection accuracy")
+- Environments
+  - minimal: `--setting-sources project,local` (does not load the user's skills or CLAUDE.md)
+  - full: also loads user settings (hooks disabled only)
+  - Codex: `codex exec -s read-only` (skill in `.agents/skills/`)
+- Count: runs that read `.memory` / total runs
+
+| | A skill only | B + one-line note | C none |
 |---|---|---|---|
-| Sonnet・最小 | 7/7 | 6/6 | 5/6 |
-| Opus・最小 | 6/6 | 6/6 | **2/6**（p2 は 0/3） |
-| Sonnet・full | 6/6 | 6/6 | 4/6 |
-| Opus・full | 12/12 | 6/6 | 6/6 |
+| Sonnet, minimal | 7/7 | 6/6 | 5/6 |
+| Opus, minimal | 6/6 | 6/6 | **2/6** (p2: 0/3) |
+| Sonnet, full | 6/6 | 6/6 | 4/6 |
+| Opus, full | 12/12 | 6/6 | 6/6 |
 | Codex | 5/5 | 4/4 | 4/4 |
 
-読んだ回はすべて、回答で記憶の内容（不採用の理由・数値）に触れていた。
+Every run that read the memories mentioned their content (the reason for rejection, the numbers) in its answer.
 
-### 分かったこと
+### Findings
 
-- スキルを入れれば、案内の1行がなくても毎回読んだ（36/36）。案内の1行を足しても、読む回数は増えなかった。
-- Claude は多くの場合、Skill を呼ばずに直接 INDEX.md を読んだ。常にコンテキストに入る description の「作業前に必ず読む」の一文が効いていると考えられる。ただし、この一文だけを外した条件は比べていない。
-- スキルがないと、読み逃しがある（Opus・最小の中立の依頼で 0/3）。full 環境の C で読む回が多いのは、ユーザーの global 設定に記憶の運用が書かれているためと考えられる（未検証）。
+- With the skill installed, agents read the memories every time, without the one-line note (36/36). Adding the note did not increase reads.
+- Claude usually read INDEX.md directly without invoking the Skill. The "always read before work" sentence in the description, which is always in context, appears to be what works. However, no condition removed only that sentence.
+- Without the skill, reads were missed (Opus, minimal, neutral request: 0/3). Condition C reads more often in the full environment probably because the user's global settings describe a memory workflow (not verified).
 
-### 限界
+### Limits
 
-- ファイル数の少ない repo で、`.memory/` がルートの一覧ですぐ目に入る。大きな repo や、長い会話の途中での依頼では未確認。
-- 実行の途中で SKILL.md を書き直した。description の「作業前に必ず読む」の文は変えていない。
+- The repo has few files, and `.memory/` is immediately visible in the root listing. Large repos and requests in the middle of a long conversation were not checked.
+- SKILL.md was rewritten partway through the runs. The "always read before work" sentence in the description was not changed.
 
-## 2. 書く・資料にする動作（`behavior-test/`）
+## 2. Writing and making reports (`behavior-test/`)
 
-配布時と同じ配置（正本は `.agents/skills/`、`.claude/skills/` は symlink）で、Opus と Codex に各2回ずつ実行した。
+With the same layout as distribution (the skill in `.agents/skills/`, `.claude/skills/` as a symlink), Opus and Codex ran twice each.
 
-公開にあたり、`behavior-test/extra-memory.md` の内部メモにある内部の呼び名と管理番号、および `trigger-test/fixture/.memory/` の記憶1件（2026-10-22）の内容を、架空のものに置き換えた。実行時は別の呼び名だったが、役割（資料に写してはいけない内部の情報）は同じ。
+For publication, the internal name and control numbers in the internal notes of `behavior-test/extra-memory.md`, and the content of one memory (2026-10-22) in `trigger-test/fixture/.memory/`, were replaced with fictional ones. The runs used different names, but with the same role (internal information that must not be copied into reports).
 
-### 書く（「大津の方法を試したが採用しない。佐藤さんの指摘。Issue は #12。記憶に残して」）
+### Writing ("We tried Otsu's method but are not adopting it. Sato pointed it out. The issue is #12. Remember this.")
 
-- Claude 2/2: ほぼ決まりどおりに書いた。ただし2回目は、数値に計測日と確定・暫定の区別がなかった（依頼文にも計測日はなかった）。分からないときは分からないと書くよう、スキルに1文足した。
-  - ファイル名、frontmatter、見出しの構成、INDEX への1行の追加、`related` の書き方が守られていた。
-  - 本文に人名は出さず、author は `gh` で取った GitHub login だった。
-  - 既存の記憶（評価用の図面が45枚に増えた件）に気づき、「30枚での比較、45枚では未計測」と適用範囲を書いた。
-- Codex 0/2: 書かずに、作成者の GitHub login を尋ねた。
-  - sandbox からはネットワークにつながらず、`gh api user` が失敗したため。スキルの「取れなければ聞く、推測しない」に従った正しい動作ではある。
-  - 対応: ネットワークを使わない `gh config get -h github.com user` を先に使うようスキルを直した。Codex の sandbox からこのコマンドで取れることを確認した。
+- Claude 2/2: wrote almost exactly per the rules. The second run, however, did not give a measurement date or say whether the numbers were final (the request did not give a date either). A sentence was added to the skill to say "unknown" when something is unknown.
+  - File name, frontmatter, section structure, the one-line INDEX addition and the `related` format were all followed.
+  - No personal names in the body; author was the GitHub login obtained through `gh`.
+  - It noticed the existing memory (the evaluation set grew to 45 images) and stated the scope: "compared on 30 images; not measured on 45".
+- Codex 0/2: did not write, and asked for the author's GitHub login instead.
+  - The sandbox had no network, so `gh api user` failed. Per the skill's "ask if you cannot get it; do not guess", this was correct behavior.
+  - Fix: the skill now tries `gh config get -h github.com user`, which needs no network, first. Confirmed that this command works from Codex's sandbox.
 
-### 資料にする（「今週の先方向け定例資料の節を .memory から作って」）
+### Making a report ("Build this week's client status report section from .memory")
 
-- Claude 2/2、Codex 2/2: author、Issue 番号、内部の呼び名、先方の管理番号、遅れの表現のどれも資料に出さなかった。
-- 暫定の数値には「暫定」と付けていた。
-- Claude は、資料とは別に「出さなかったもの」と「確認が要る点」を PM 向けに書き添えた（計測日と確定・暫定の区別がない記憶について）。
+- Claude 2/2, Codex 2/2: none of the author, issue numbers, internal names, client control numbers or wording about delays appeared in the report.
+- Provisional numbers were marked "provisional".
+- Claude added, separately from the report, notes for the PM on "what was left out" and "points to confirm" (about memories without a measurement date or final/provisional status).
 
-## 3. 「必ず読む」を弱めた説明文（v2）との比較
+## 3. Comparison with the softened description (v2)
 
-ユーザーの判断で、description を「作業前に必ず INDEX を読む」（v1）から、次の内容（v2）に変えた。
+By the user's decision, the description was changed from "always read the INDEX before work" (v1) to the following (v2):
 
-- 過去の判断が関係しそうな作業では、着手前に INDEX を見て、関係する記憶だけ開く。
-- 関係のない小さな作業では読まない。
+- For work where past decisions may matter, look at the INDEX before starting and open only related memories.
+- Do not read for small unrelated work.
 
-ユーザー設定を読む環境（full）と Codex で、依頼を2つ足して比べた。
+In the environment that loads user settings (full) and with Codex, two more requests were added for comparison:
 
-- p3: 関係のない依頼（README の誤字探し）
-- p4: 記憶と関係の薄い依頼（HoughCircles の minDist の調整）
+- p3: unrelated request (look for typos in the README)
+- p4: loosely related request (tune HoughCircles' minDist)
 
-表の各セルは「INDEX を読んだ回数 / 実行回数」と、括弧内に1回あたりの「開いた記憶の本文の数・所要時間」。Codex の所要時間は取っていない。
+Each cell is "runs that read the INDEX / total runs", with "memory bodies opened, time" per run in parentheses. Time was not taken for Codex.
 
-| | p1・p2（関係する依頼） | p3（関係のない依頼） | p4（関係の薄い依頼） |
+| | p1, p2 (related) | p3 (unrelated) | p4 (loosely related) |
 |---|---|---|---|
-| Opus v1 | 12/12 | 3/3（0件・11秒） | 3/3（2.0件・48秒） |
-| Opus v2 | 6/6 | **0/3**（0件・11秒） | 3/3（1.0件・39秒） |
-| Sonnet v1 | 6/6 | 1/3（0件・6秒） | 3/3（2.0件・19秒） |
-| Sonnet v2 | 6/6 | 1/3（0件・6秒） | 3/3（2.0件・16秒） |
-| Codex v2 | 4/4 | 0/2 | 2/2（1.5件） |
+| Opus v1 | 12/12 | 3/3 (0, 11 s) | 3/3 (2.0, 48 s) |
+| Opus v2 | 6/6 | **0/3** (0, 11 s) | 3/3 (1.0, 39 s) |
+| Sonnet v1 | 6/6 | 1/3 (0, 6 s) | 3/3 (2.0, 19 s) |
+| Sonnet v2 | 6/6 | 1/3 (0, 6 s) | 3/3 (2.0, 16 s) |
+| Codex v2 | 4/4 | 0/2 | 2/2 (1.5) |
 
-### 分かったこと
+### Findings
 
-- v2 でも、関係する依頼では毎回読んだ（16/16）。弱めても、肝心なときに読まなくなることはなかった。
-- 関係のない依頼で INDEX を読む回は減った（Opus は 3/3 から 0/3）。
-- 関係の薄い依頼で、Opus が開く本文は 2.0件から 1.0件に減った。
-- 所要時間の差は小さく、回ごとのばらつきの範囲に収まる。このサンプル repo は記憶が2件と少ないので、読みすぎの負担がもともと小さい。記憶が増えたときの差は、実際のプロジェクトで確かめる。
+- With v2, agents still read the memories on every related request (16/16). Softening did not make them skip when it mattered.
+- Reads of the INDEX on unrelated requests dropped (Opus from 3/3 to 0/3).
+- On the loosely related request, Opus opened 1.0 bodies instead of 2.0.
+- Time differences were small and within run-to-run variation. This sample repo has only two memories, so the cost of over-reading was small to begin with. The difference with many memories needs to be checked on a real project.
 
-## 4. 記憶が増えたとき・方針が変わったとき（`scale-test/`）
+## 4. Many memories, and changes of direction (`scale-test/`)
 
-スキルに次の2つを足したあと、Opus と Codex に各2回ずつ実行した。
+After adding the following two rules to the skill, Opus and Codex ran twice each:
 
-- 方針が変わったら、同じファイルの結論を書き換え、`経緯` に追記する
-- INDEX が100行を超えたら、分野ごとのフォルダに分ける（実験時の文言。その後、見出しを数えない「100件」に直した）
+- When the direction changes, rewrite the conclusion in the same file and add to `History`
+- When the INDEX exceeds 100 lines, split into per-area folders (the wording at the time; later changed to "100 memories", not counting headings)
 
-| シナリオ | 内容 | Opus | Codex |
+| Scenario | What | Opus | Codex |
 |---|---|---|---|
-| read | 6分野×40件＝240件を分けた `.memory/` で、不採用の記憶と同じ方法を提案する依頼 | 2/2。上の INDEX → `detection/INDEX.md` → 目的の記憶。全文を開いたのはその1件 | 2/2。目的の記憶に届いた。関係の薄い `eval/INDEX.md` も開き、grep の結果として別分野の記憶の抜粋も見た |
-| policy | 「前処理を入れたので固定しきい値に戻す。再現率 0.83」と記憶の更新を頼む | 2/2。新しいファイルは作らず、結論・title・INDEX の行を書き換え、`経緯` と `updated` を足した。以前の数値は `根拠` に残した | 2/2。同じ |
-| split | INDEX に記憶がちょうど100件（見出しを含めて102行）のときに、既存のテーマ（二値化）の知見を足す | 2/2。既存の記憶に追記したので、記憶は100件のまま。分けなかった | 2/2。既存の記憶を更新したうえで、3分野に分けた（102行を「100行超え」と読んだとみられる） |
-| split2 | 同じく、新しいテーマ（CSV の文字コード）を足す | 最初の版のスキルでは 0/2。足したうえで「分ける作業は別の PR」と先送りした。文言を直した版では 2/2 で、その場で3分野に分け、分ける作業は別のコミットにした | 1/1。その場で分けた |
+| read | In a `.memory/` with 6 areas x 40 = 240 memories, a request proposing the same approach as a rejected memory | 2/2. Top INDEX → `detection/INDEX.md` → the target memory. Only that one was opened in full | 2/2. Reached the target memory. Also opened the loosely related `eval/INDEX.md`, and saw excerpts from other areas through grep results |
+| policy | "We added preprocessing, so we are going back to a fixed threshold. Recall 0.83." Asked to update the memory | 2/2. No new file; rewrote the conclusion, title and INDEX line, and added `History` and `updated`. Kept the old numbers in Evidence | 2/2. Same |
+| split | With exactly 100 memories in the INDEX (102 lines with headings), add a finding on an existing topic (binarization) | 2/2. Appended to the existing memory, so there were still 100 memories. Did not split | 2/2. Updated the existing memory and split into 3 areas (it seems to have read 102 lines as "over 100 lines") |
+| split2 | Same, adding a new topic (CSV encoding) | 0/2 with the first version of the skill: it added the memory and postponed splitting as "a separate PR". 2/2 after the wording was fixed: split into 3 areas right away, in a separate commit | 1/1. Split right away |
 
-### 分かったこと
+### Findings
 
-- 分野に分けた INDEX をたどって、240件の中から目的の記憶にたどり着けた。全文を開いたのは、Opus ではその1件だけだった。
-- 方針転換は、ファイルを増やさずに、同じファイルの書き換えと経緯の追記で表せた。
-- 「100行」は、見出しを数えるかどうかで読み方が分かれた（split の Opus と Codex の違い）。そこで、見出しを数えない「100件」に直した。
-- 最初の版の「分野に分ける作業は、ほかの変更と混ぜず、記憶だけの PR にする」は、2通りに読めた。Opus は「この記憶の追加とも混ぜない」と読み、分ける作業を先送りした。そこで「超えたら、その場で分ける。コードの変更とは別のコミットにする」と直した。
+- Following the split INDEX, the agent reached the target memory among 240. Opus opened only that one in full.
+- A change of direction was expressed by rewriting the same file and appending to its history, without adding files.
+- "100 lines" was read differently depending on whether headings count (Opus and Codex differed in split). It was changed to "100 memories", not counting headings.
+- The first wording, "split into areas in a memory-only PR, not mixed with other changes", could be read two ways. Opus read it as "not even mixed with adding this memory" and postponed splitting. It was changed to "split right away when exceeded; put it in a commit separate from code changes".
 
-### 限界
+### Limits
 
-- 作った記憶は機械的に作った文面（「方式N を既定にする」など）で、実際のプロジェクトの記憶より区別しやすい。
-- 分けたあとの INDEX の行数と、分けたことで減った読み込み量は測っていない。
+- The memories were machine-generated ("make method N the default" and so on), so they are easier to tell apart than real project memories.
+- The INDEX length after splitting, and how much reading the split saved, were not measured.
+
+## 5. After translating the skill into English (2026-10-27)
+
+The skill text (SKILL.md and its description) was translated into English, and a rule was added: write memories in the language of the existing memories in `.memory/`, or the user's language when there are none, with paired English and Japanese headings. To check that Japanese teams are not affected and that English teams work, the read and write tests were re-run in both languages.
+
+- Japanese: the original fixture (`trigger-test/fixture/`) and the original Japanese prompts, unchanged.
+- English: `trigger-test/fixture-en/` (the same repo with English memories) and English versions of the same prompts. Select with `LANG_SET=en`.
+- Environment: Ubuntu, Claude Code 2.1.311 with `--setting-sources project,local` (minimal), Codex CLI 0.164.0. Condition A (skill only) throughout.
+
+### Reading (`trigger-test/`, condition A)
+
+Runs that read the INDEX / total runs, with memory bodies opened per run in parentheses.
+
+| | p1, p2 (related) | p3 (unrelated) | p4 (loosely related) |
+|---|---|---|---|
+| Opus, Japanese | 4/4 | 0/1 | 1/1 (1.0) |
+| Opus, English | 4/4 | 0/1 | 1/1 (2.0) |
+| Sonnet, Japanese | 4/4 | 0/1 | 1/1 (2.0) |
+| Sonnet, English | 4/4 | 0/1 | 1/1 (0.0) |
+| Codex, Japanese | 4/4 | 0/1 | 1/1 (1.0) |
+| Codex, English | 4/4 | 0/1 | 1/1 (2.0) |
+
+- On related requests, every agent read the memories in both languages (24/24), and every answer to p1 cited the rejection or its numbers.
+- On the unrelated request (typo check), none read the INDEX (0/6).
+
+### Writing and reports (`behavior-test/`)
+
+Opus and Codex, once per language per scenario, with the same prompts as section 2 (English versions for the English fixture).
+
+- Language: all four write runs wrote in the language of the existing memories. Japanese repos got `結論` / `根拠` headings and a Japanese title; English repos got `Conclusion` / `Evidence`. The INDEX line was added in the same language.
+- Scope: all four noticed the memory about the 45-drawing evaluation set and stated that the comparison was on 30 drawings only.
+- Unknowns: all four wrote that the measurement date and final/provisional status were not given.
+- Names: in the first round, Codex (English) put the reviewer's name in `Internal notes`. The rule was changed from "no names in the body" to "no names anywhere in the body, including `Internal notes`; refer to people by role". In four re-runs (Codex English x2, Codex Japanese, Opus English), no names appeared.
+- `related`: Codex wrote `"[#12] ..."` instead of `"#12 ..."` in 4 of 5 runs, including both re-runs after the example was added. The machine's global Codex instructions ask for issue references in the `[#N] title` form, which probably caused this (not verified). An example was added to the `related` row of the frontmatter table.
+- Reports: in all four runs (Opus and Codex, both languages), the client control numbers, the internal model name, personal names, issue numbers and the internal note about the schedule slipping stayed out of the report. The provisional number was marked provisional. Opus again listed, outside the report, what it left out and what the PM should confirm.
+
+### Limits
+
+- One or two runs per cell. The scale tests in section 4 were not re-run; the rules they test were translated without changing their meaning.
+- The English prompts are translations of the Japanese ones, and the English fixture is a translation of the Japanese one.

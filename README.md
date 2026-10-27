@@ -1,88 +1,84 @@
-<p align="center"><img src="docs/banner.png" alt="team-memory" width="100%"></p>
-
 # team-memory
 
-Claude Code と Codex のためのスキル。エージェントが作業中に得た知見を repo の `.memory/` に残し、PR でチームと共有する。
+English | [日本語](README.ja.md)
 
-> A skill for Claude Code and Codex that keeps a team's decisions, abandoned approaches and measurements in the repo's `.memory/` and shares them through pull requests. The skill text is written in Japanese.
+A skill for Claude Code and Codex. Agents keep what they learn while working in the repo's `.memory/`, and share it with the team through pull requests.
 
-## なぜ
+## Why
 
-複数の人が、それぞれのエージェントと同じ repo で作業すると、エージェントが試行錯誤して得た知見はその人の手元にしか残りません。Claude Code の auto memory はマシンの中だけにあり、CLAUDE.md や AGENTS.md は規約や手順を書く場所です。その結果、別の人のエージェントが、すでに試して捨てた方法をまた試すことになります。
+When several people work on the same repo, each with their own agent, whatever an agent learns through trial and error stays with that one person. Claude Code's auto memory lives only on one machine, and CLAUDE.md and AGENTS.md are for rules and procedures. So another person's agent ends up trying an approach that was already tried and abandoned.
 
-team-memory は、次のことを repo の中に Markdown で残します。
+team-memory keeps the following in the repo as Markdown:
 
-- 何を決めたか、なぜそう決めたか
-- 何を試して、なぜやめたか
-- どんな条件で何を測ったか
+- What was decided, and why
+- What was tried, and why it was dropped
+- What was measured, and under which conditions
 
-記憶は PR に含めてレビューされ、チーム全員のエージェントが読みます。PM は、自分のエージェントに定例資料の材料を集めさせることもできます。
+Memories are reviewed as part of PRs, and every agent on the team reads them. A PM can also have their own agent gather material for status meetings.
 
-<p align="center"><img src="docs/how-it-works.gif" alt="Aさんの Claude Code が試行錯誤を .memory/ に書き、Bさんの Claude Code がそれを読んで同じ失敗を避ける流れ" width="100%"></p>
+## What it solves
 
-## 解決すること
+### Problem: someone tries an approach that was already tried and dropped
 
-### Issue: すでに試して捨てた方法を、別の人がまた試す
+A's Claude Code tried binarizing with a fixed threshold. Circles broke up in faint drawings, so A dropped it. But that history lives only in A's local conversation. The next week, B's Claude Code tries the same thing because "it should be faster", and goes through the same failure again.
 
-Aさんの Claude Code が、固定しきい値での二値化を試しました。薄い図面で丸が欠けたので、その方法はやめました。でも、その経緯はAさんの手元の会話にしか残りません。翌週、Bさんの Claude Code が「速くなりそう」と同じ方法を試し、同じ失敗をたどり直します。
+**Solved:** A's Claude Code writes the reason for dropping it, with the numbers, to `.memory/`, and the PR is merged. Before starting, B's Claude Code looks at `INDEX.md`, opens that memory, and stops: "This was tried on 10/20 and rejected."
 
-**Solved:** Aさんの Claude Code が、やめた理由と数値を `.memory/` に書き、PR でマージされます。Bさんの Claude Code は着手前に `INDEX.md` を見てその記憶を開き、「10/20 に試して不採用」と手を止めます。上の GIF がこの流れです。
+### Problem: every new conversation repeats the same trial and error
 
-### Issue: 会話が変わるたびに、同じ試行錯誤を繰り返す
+An agent does not remember approaches it dropped in an earlier conversation. Each new conversation starts from the same approach and gets stuck in the same place.
 
-エージェントは、前の会話でやめた方法を覚えていません。新しい会話を始めるたびに、同じ方法から試し直して、同じところで止まります。
+**Solved:** what was tried and why it was dropped stays in the repo, so work picks up where it left off.
 
-**Solved:** 試した方法とやめた理由が repo に残るので、前回の続きから始められます。
+### Problem: assumptions in the PM's head never reach the developers' agents
 
-### Issue: PM の頭の中にある前提が、開発側のエージェントに届かない
+The PM's priorities, their reading of what the client wants, and options they are vaguely considering or have set aside live only in meetings and chat. Developers' agents work without knowing them.
 
-PM が考えている優先順位、先方の意向の受け止め方、うっすら考えている案や見送った案は、会議やチャットの中にしかありません。開発者のエージェントは、それを知らないまま作業します。
+**Solved:** the PM can ask their own agent to "remember this assumption". Once it is in `.memory/`, every agent on the team takes it into account.
 
-**Solved:** PM も自分のエージェントに「この前提を記憶に残して」と頼めます。`.memory/` に入った前提は、チーム全員のエージェントが踏まえて動きます。
+### Problem: asking around for the background every time you prepare a status report
 
-### Issue: 定例資料を作るたびに、経緯を聞いて回る
+**Solved:** the PM's agent builds a section of the report from `.memory/`, filtered by period and issue. It does not copy internal notes, authors or issue numbers.
 
-**Solved:** PM のエージェントが、`.memory/` から期間と課題で絞って資料の節を作ります。内部メモ、作成者、Issue 番号は写しません。
+## Getting started
 
-## 使い始める
+Run one of the following at the root of the target repo. None of them needs any addition to CLAUDE.md or AGENTS.md. The agent creates `.memory/` when it writes the first memory.
 
-対象の repo のルートで、次のどれかを実行します。どれも CLAUDE.md や AGENTS.md への追記は要りません。`.memory/` は、最初の記憶を書くときにエージェントが作ります。
-
-| 方法 | 対応するエージェント | 向いている場面 |
+| Method | Agents | When to use |
 |---|---|---|
-| 1. skills CLI | Claude Code・Codex ほか | チームで Claude Code と Codex を両方使う（おすすめ） |
-| 2. Claude Code の plugin マーケットプレイス | Claude Code | チーム全員が Claude Code だけを使う |
-| 3. 手作業 | Claude Code・Codex | npx も plugin も使えない |
+| 1. skills CLI | Claude Code, Codex and others | The team uses both Claude Code and Codex (recommended) |
+| 2. Claude Code plugin marketplace | Claude Code | Everyone on the team uses only Claude Code |
+| 3. By hand | Claude Code, Codex | Neither npx nor plugins are available |
 
 ### 1. skills CLI
 
-Node.js 22.20 以上が必要です。
+Requires Node.js 22.20 or later.
 
 ```sh
 npx skills add ibukimatsubara/team-memory -a claude-code -a codex -y
 ```
 
-[skills](https://github.com/vercel-labs/skills) CLI が、スキルを repo に入れます。
+The [skills](https://github.com/vercel-labs/skills) CLI installs the skill into the repo:
 
-- Codex 用: `.agents/skills/team-memory/` に本体を置く
-- Claude Code 用: `.claude/skills/team-memory` に symlink を張る
-- 更新の確認用: `skills-lock.json`
+- For Codex: the skill itself in `.agents/skills/team-memory/`
+- For Claude Code: a symlink at `.claude/skills/team-memory`
+- For update checks: `skills-lock.json`
 
-3つともコミットすれば、チーム全員のエージェントが使えます。新しい版は `npx skills update` で取り込めます。
+Commit all three and every agent on the team can use it. Pull in new versions with `npx skills update`.
 
-### 2. Claude Code の plugin マーケットプレイス
+### 2. Claude Code plugin marketplace
 
 ```sh
 claude plugin marketplace add ibukimatsubara/team-memory --scope project
 claude plugin install team-memory@team-memory --scope project
 ```
 
-書き換わった `.claude/settings.json` をコミットします。チームの人がこの repo のフォルダを信頼すると、Claude Code がマーケットプレイスを登録し、plugin を有効にします。
+Commit the updated `.claude/settings.json`. When teammates trust the repo folder, Claude Code registers the marketplace and enables the plugin.
 
-- スキルは `team-memory:team-memory` という名前で見えます。
-- Codex には入りません。
+- The skill appears as `team-memory:team-memory`.
+- It is not installed for Codex.
 
-### 3. 手作業
+### 3. By hand
 
 ```sh
 git clone https://github.com/ibukimatsubara/team-memory.git /tmp/team-memory
@@ -91,80 +87,85 @@ cp -R /tmp/team-memory/skills/team-memory .agents/skills/
 ln -s ../../.agents/skills/team-memory .claude/skills/team-memory
 ```
 
-`.agents/skills/team-memory` と `.claude/skills/team-memory` をコミットします。
+Commit `.agents/skills/team-memory` and `.claude/skills/team-memory`.
 
-## 動き
+## How it behaves
 
-**読む**: 過去の判断が関係しそうな作業では、エージェントが着手前に `.memory/INDEX.md` を見て、関係する記憶だけを開きます。誤字の修正のような小さな作業では読みません。
+**Reading**: for work where past decisions may matter, the agent looks at `.memory/INDEX.md` before starting and opens only the related memories. It does not read them for small work such as fixing a typo.
 
-**書く**: 方針を決めたとき、実験を打ち切ったとき、PR を作る前に、エージェントが記憶を書きます。「記憶に残して」と頼むこともできます。PR にならずに捨てた試行も、記憶だけの PR で残します。開発者だけでなく、PM が決めた前提や見送った案も書けます。
+**Writing**: the agent writes a memory when a direction is decided, when an experiment is dropped, and before opening a PR. You can also ask it to "remember this". Attempts dropped without a PR are kept in a memory-only PR. PMs can record their assumptions and set-aside options, not only developers.
 
-**方針が変わったら**: 同じ記憶の結論を書き換え、「経緯」に日付・以前の結論・変えた理由を1行足します。README や仕様書など、関係する repo の文書も同じ PR で直します。
+**When the direction changes**: the agent rewrites the conclusion of the same memory and adds one line to its history with the date, the previous conclusion and the reason. Related repo documents such as the README or specs are fixed in the same PR.
 
-**増えてきたら**: INDEX の記憶が100件を超えたら、記憶を分野ごとのフォルダに分けます。上の INDEX は分野の一覧になります。統合した記憶や、対象がなくなった記憶は `archive/` に移します。INDEX で見つからないときは grep で探すので、膨大になっても探せます。整理は頼まれたときだけ行います。
+**As memories grow**: once the INDEX lists more than 100 memories, memories are split into per-area folders and the top INDEX becomes a list of areas. Merged memories and memories whose subject is gone move to `archive/`. When the INDEX does not show something, the agent searches with grep, so it scales. Tidying up happens only when asked.
 
-**資料にする**: 「今週の定例資料の節を .memory から作って」のように頼むと、結論と根拠を使って資料を作ります。内部メモ、作成者、Issue 番号は写しません。
+**Making reports**: ask something like "build this week's status report section from .memory" and the agent writes it from the conclusions and evidence. It does not copy internal notes, authors or issue numbers.
 
-## 記憶の形
+**Language**: memories are written in the language the existing memories in `.memory/` use, or, when there are none yet, in the language of the person working. A team that works in Japanese keeps Japanese memories and headings.
+
+## What a memory looks like
 
 ```
 .memory/
-├── INDEX.md                                  # 今有効な記憶を1件1行で（100件を超えたら分野の一覧に）
+├── INDEX.md                                  # current memories, one per line (a list of areas past 100)
 ├── 2026-10-20-fixed-threshold-rejected.md
 └── 2026-10-24-eval-set-expanded.md
 ```
 
 ```markdown
 ---
-title: 固定しきい値の二値化は採用しない
-author: octocat            # 作業を指示した人の GitHub login
+title: Do not use a fixed threshold for binarization
+author: octocat            # GitHub login of the person who directed the work
 date: 2026-10-20
 status: current            # current / superseded
 related:
-  - "#12 丸記号の検出精度の改善"
+  - "#12 Improve circle symbol detection accuracy"
 ---
 
-## 結論
-スキャン画像の二値化には適応的しきい値を使う。固定しきい値は採用しない。
-適用範囲: 現在受け付けているスキャン画像。写真入力は未評価。
+## Conclusion
+Binarize scanned images with an adaptive threshold. Do not use a fixed threshold.
+Scope: the scanned images currently accepted. Photo input has not been evaluated.
 
-## 根拠
-- 再現率: 固定 0.62、適応的 0.81（評価用30枚、2026-10-20 計測、確定）。
+## Evidence
+- Recall: fixed 0.62, adaptive 0.81 (30 evaluation images, measured 2026-10-20, final).
 
-## 再検討の条件
-入力の濃さがそろう前処理が入った場合。
+## History
+- 2026-10-20: First recorded.
 
-## 経緯
-- 2026-10-20: 初めて記録。
+## Revisit when
+Preprocessing is added that evens out input darkness.
 
-## 内部メモ
-（社外の資料に出さない内部の呼び名や経緯）
+## Internal notes
+(Internal names and background not to be shown outside the team)
 ```
 
-- 方針が変わったら、同じファイルの結論を書き換え、`経緯` に変更を残します。
-- 結論は社外の人にも通じる言葉で書き、内部の呼び名は内部メモに分けます。
-- 作成者は、その repo のコミットと同じ GitHub アカウントにします。
+- When the direction changes, the conclusion in the same file is rewritten and the change is recorded in `History`.
+- The conclusion is written in words people outside the team understand. Internal names go in the internal notes.
+- The author is the same GitHub account used for commits in that repo.
+- Japanese memories use the headings `結論`, `根拠`, `経緯`, `再検討の条件` and `内部メモ`. Both forms are read as the same.
 
-詳しい決まりは [`skills/team-memory/SKILL.md`](skills/team-memory/SKILL.md) にあります。
+The full rules are in [`skills/team-memory/SKILL.md`](skills/team-memory/SKILL.md).
 
-## 実測
+## Measurements
 
-スキルが実際にそう動くかを、Claude Code（Sonnet・Opus）と Codex で測りました。結果は [`experiments/RESULTS.md`](experiments/RESULTS.md) にあります。
+We measured whether the skill actually behaves this way with Claude Code (Sonnet, Opus) and Codex. Results are in [`experiments/RESULTS.md`](experiments/RESULTS.md).
 
-- スキルを入れれば、CLAUDE.md・AGENTS.md に案内を書かなくても、関係する依頼では毎回記憶を読みました。
-- 関係のない依頼では、記憶をほとんど読みませんでした。
-- 定例資料を作らせたとき、作成者・Issue 番号・内部の呼び名は資料に出ませんでした。
-- 240件の記憶を分野に分けた repo でも、関係する分野の INDEX をたどって目的の記憶にたどり着き、全文を開いたのはその1件でした。
-- 方針転換を頼むと、ファイルを増やさずに結論を書き換え、経緯を追記しました。
+- With the skill installed, agents read the memories on every related request, without any note in CLAUDE.md or AGENTS.md.
+- On unrelated requests, they rarely read them.
+- When asked to make a status report, they kept authors, issue numbers and internal names out of it.
+- In a repo with 240 memories split into areas, the agent followed the related area's INDEX to the target memory and opened the full text of only that one.
+- Asked to change direction, the agent rewrote the conclusion and appended to the history without adding files.
 
-サンプル repo と、機械的に作った記憶での結果です。
+- After the skill was translated into English, agents still read the memories on every related request in both Japanese and English repos, and wrote new memories in the language the repo's memories already use.
 
-## リポジトリの中身
+These results come from a sample repo and machine-generated memories.
 
-- `skills/team-memory/`: スキル本体
-- `DESIGN.md`: 設計で決めたことと、その根拠
-- `experiments/`: 動作の実測に使ったスクリプトと結果
+## What is in this repo
 
-## ライセンス
+- `skills/team-memory/`: the skill
+- `DESIGN.md`: design decisions and their reasons
+- `experiments/`: scripts and results used to measure the behavior
+
+## License
 
 [MIT](LICENSE)

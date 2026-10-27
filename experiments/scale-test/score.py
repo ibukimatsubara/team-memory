@@ -1,8 +1,8 @@
-"""scale-test の結果をまとめる。
+"""Summarize scale-test results.
 
-read:   開いた INDEX と記憶の本文、目的の記憶（fixed-threshold）を開いたか
-policy: 既存ファイルの書き換えか、新しいファイルか、経緯・updated・INDEX の更新
-split:  分野のフォルダに分けたか、上の INDEX が分野の一覧になったか
+read:   INDEX files and memory bodies opened; whether the target memory (fixed-threshold) was opened
+policy: whether an existing file was rewritten or a new one created; History, updated and INDEX changes
+split:  whether memories were split into area folders and the top INDEX became a list of areas
 """
 import json
 import pathlib

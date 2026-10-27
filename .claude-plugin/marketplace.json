@@ -5,12 +5,12 @@
   },
   "metadata": {
     "description": "Share a team's decisions, abandoned approaches and measurements through the repo's .memory/",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "plugins": [
     {
       "name": "team-memory",
-      "description": "エージェントが作業中に得た知見（決定・試して捨てた方法・計測値）を repo の .memory/ に残し、PR でチームと共有する",
+      "description": "Agents keep what they learn while working (decisions, approaches tried and dropped, measurements) in the repo's .memory/ and share it with the team through PRs",
       "source": "./",
       "strict": false,
       "skills": [

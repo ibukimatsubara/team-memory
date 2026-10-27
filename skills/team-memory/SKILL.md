@@ -52,7 +52,7 @@ Section headings and the INDEX title come in pairs. Treat both forms as the same
 | `Internal notes` | `内部メモ` |
 | `# Team memory` (INDEX title) | `# チームの記憶` |
 
-Frontmatter keys and values (`status: current` and so on) stay in English in every language.
+Frontmatter keys and fixed values (`status: current`, `agent: codex` and so on) stay in English in every language. Free text such as `title` and the titles in `related` follows the memory's language.
 
 ### New file or update
 

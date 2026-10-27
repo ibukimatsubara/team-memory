@@ -154,6 +154,14 @@ Opus and Codex, once per language per scenario, with the same prompts as section
 - `related`: Codex wrote `"[#12] ..."` instead of `"#12 ..."` in 4 of 5 runs, including both re-runs after the example was added. The machine's global Codex instructions ask for issue references in the `[#N] title` form, which probably caused this (not verified). An example was added to the `related` row of the frontmatter table.
 - Reports: in all four runs (Opus and Codex, both languages), the client control numbers, the internal model name, personal names, issue numbers and the internal note about the schedule slipping stayed out of the report. The provisional number was marked provisional. Opus again listed, outside the report, what it left out and what the PM should confirm.
 
+### Language edge cases (`behavior-test/`, `first` scenario and `PROMPT_LANG`)
+
+After the review, two conditions of the language rule were added to the script and run once each with Opus and Codex (8 runs):
+
+- Request language differs from the existing memories (`LANG_SET=en PROMPT_LANG=ja` and the reverse, `write`): all 4 wrote in the language of the existing memories, not the request's. One Codex run kept the Japanese issue title from the request in `related` of an English memory.
+- No `.memory/` yet (`first`, request in English or Japanese): all 4 created `.memory/` in the request's language, with the INDEX title `# Team memory` or `# チームの記憶` to match.
+- No personal names appeared in any of the 8 runs.
+
 ### Limits
 
 - One or two runs per cell. The scale tests in section 4 were not re-run; the rules they test were translated without changing their meaning.

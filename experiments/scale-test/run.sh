@@ -1,11 +1,13 @@
 #!/bin/bash
-# 使い方: run.sh <シナリオ read|policy|split> <エージェント claude|codex> <回> [モデル]
-# read:   240件を分野に分けた .memory/ で、関係する分野と記憶だけを開くか
-# policy: 方針転換を頼んだとき、同じファイルの結論を書き換えて経緯を足すか
-# split:  INDEX がちょうど100行のときに1件書き足すと、分野に分けるか（既存テーマへの追記になる依頼）
-# split2: 同じく、新しいテーマを書き足す依頼
+# Usage: run.sh <scenario read|policy|split|split2> <agent claude|codex> <run> [model]
+# read:   with 240 memories split into areas, does the agent open only the related area and memory?
+# policy: asked to change direction, does it rewrite the conclusion in the same file and add to the history?
+# split:  with exactly 100 lines in INDEX, does adding one memory split it into areas? (request that extends an existing topic)
+# split2: same, with a request on a new topic
+# The fixture and prompts are Japanese only.
 set -u
 E=$(cd "$(dirname "$0")" && pwd)
+CLAUDE_BIN=${CLAUDE_BIN:-claude}
 SCN=$1 AGENT=$2 N=$3 MODEL=${4:-opus}
 TAG=$AGENT
 [ "$AGENT" = claude ] && TAG=$MODEL
@@ -29,7 +31,7 @@ case $SCN in
 esac
 mkdir -p "$(dirname "$OUT")"
 if [ "$AGENT" = claude ]; then
-  (cd "$R" && /opt/homebrew/bin/claude -p "$PROMPT" --model "$MODEL" \
+  (cd "$R" && "$CLAUDE_BIN" -p "$PROMPT" --model "$MODEL" \
     --setting-sources project,local --settings '{"disableAllHooks": true}' --no-session-persistence \
     --permission-mode bypassPermissions --output-format stream-json --verbose > "$OUT.jsonl" 2> "$OUT.err")
 else

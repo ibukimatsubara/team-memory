@@ -1,44 +1,45 @@
-# team-memory 設計メモ
+# team-memory design notes
 
-## 目的
+## Purpose
 
-複数人・複数エージェントで同じ repo を触るとき、Claude や Codex が作業中に得た知見（決定・理由・試して捨てた方法・計測値）を、repo の中に残して共有する。
-PR に含めてレビューを通し、別の人のエージェント（例: PM の Claude）が読んで、定例資料や先方共有資料の材料にできるようにする。
+When several people and several agents work on the same repo, keep what Claude or Codex learns during work (decisions, reasons, approaches tried and dropped, measurements) inside the repo and share it.
+Memories go through review as part of PRs, so that another person's agent (for example, the PM's Claude) can read them and use them as material for status meetings and client reports.
 
-## 背景
+## Background
 
-- CLAUDE.md / AGENTS.md は Git で共有されるが、規約・手順向けで、試行錯誤の経緯を置く場所ではない。
-- Claude Code の auto memory は repo 単位だがマシンローカルで、他のメンバーには見えない。
-- 先行事例（`discussion/01-prior-art.md`）: ccmemo・TeamBrain・Cline Memory Bank・ADR・memlay。読む側は hook・MCP・常時指示で補う例が多く、スキルだけで完結するものは見つからなかった。
+- CLAUDE.md / AGENTS.md are shared through Git, but they are for rules and procedures, not for the history of trial and error.
+- Claude Code's auto memory is per repo but local to one machine, and invisible to other members.
+- Prior art (`discussion/01-prior-art.md`, not published): ccmemo, TeamBrain, Cline Memory Bank, ADR, memlay. Most make agents read memories through hooks, MCP or always-on instructions. We found none that works with a skill alone.
 
-## 決めたこと
+## Decisions
 
-| 項目 | 決定 | 根拠 |
+| Item | Decision | Reason |
 |---|---|---|
-| 配布 | スキル1つ（`skills/team-memory/SKILL.md`） | ユーザー合意 |
-| 置き場所 | repo ルートの `.memory/`。`INDEX.md` と1トピック1ファイル | ユーザー合意 |
-| 作業前に読ませる方法 | スキルの description に「過去の判断が関係しそうな作業では着手前に INDEX を見て、関係する記憶だけ開く。関係のない小さな作業では読まない」と書く。CLAUDE.md・AGENTS.md への追記は必須にしない | 実測（`experiments/RESULTS.md`）。description は常にコンテキストに入るため。「必ず読む」は読みすぎて速度を落とすのを避けたいというユーザーの判断で弱めた |
-| 利用先での配置 | skills CLI・手作業では、正本は `.agents/skills/team-memory/`、`.claude/skills/team-memory` は symlink。Claude Code だけのチームは plugin マーケットプレイス（`--scope project`）も使える | Codex は `.agents/skills`、Claude Code は `.claude/skills` を探す。symlink は実機で認識を確認 |
-| ファイル名 | `YYYY-MM-DD-<slug>.md`。日付は初回。改名しない | Codex 案。連番は並行 PR で衝突する（ADR の弱点） |
-| frontmatter | 必須: title / author / date / status。任意: agent / updated / related | PM 案（5項目）と Codex 案（agent 必須）の間。agent は PM の用途で使わないので任意 |
-| author | 作業を指示した人の GitHub login。repo の git の email（GitHub の noreply 形式）から取り、なければ `gh config get -h github.com user` か `gh api user`、取れなければ聞く | ユーザー案。PM 案（エージェント自身ではなく指示した人）。アカウントを2つ使い分ける人でも、その repo のコミットと同じアカウントになる |
-| 本文 | 結論 / 根拠 / 再検討の条件 / 内部メモ。結論以外は省略可 | PM 案（結論は社外向けの言葉・内部メモを分離）と Codex 案（適用範囲・再検討条件） |
-| 追加の検証 | 同じ結論なら既存ファイルに追記し `updated` を付ける。期間で絞るときに取りこぼさないため | Codex レビュー |
-| 結論が変わったとき | 同じファイルの結論を書き換え、`経緯` に日付・以前の結論・変えた理由を1行足す。関係する repo の文書とほかの記憶も同じ PR で直す。superseded は別のファイルへ統合したとき（同じテーマの重複をまとめたときを含む）だけ | ユーザーの判断（10/26）。当初は ADR にならい「新しいファイル＋古い方を superseded、古い結論は書き換えない」だったが、方針転換を記憶と文書の両方に反映しやすく、ファイルも増えにくい形に変えた |
-| INDEX | current だけ1行ずつ。ファイル名順に挿入、整形しない。衝突は両方の行を残す | Codex 案。自動マージ設定や生成方式は入れない |
-| 書く基準 | 「次の担当者の判断や、やり直しの手間を変えるか」。知見がなければ書かない | Codex 案 |
-| 捨てた試行 | 記憶だけの PR で残す | Codex 案 |
-| 記憶が増えたとき | 膨大になっても探せることを優先する。INDEX の記憶が100件を超えたら、その場で分野のフォルダに分け、上の INDEX は分野の一覧にする。統合済み・対象がなくなった記憶は `archive/` へ。INDEX で見つからなければ grep。整理は頼まれたときだけ、記憶だけの PR で | ユーザーの判断（10/26）。「最終整理の日付」を INDEX に置く案は、整理が重なると衝突するので採らなかった。100件は INDEX 1行が約50トークンで、毎回約5千トークンになる目安 |
-| 先方向け資料 | 結論・根拠を使う。内部メモ・author・番号は写さない。暫定値は暫定と明記して使う | PM 案 |
+| Distribution | One skill (`skills/team-memory/SKILL.md`) | Agreed with the user |
+| Location | `.memory/` at the repo root. `INDEX.md` plus one file per topic | Agreed with the user |
+| How to make agents read before work | The skill's description says: "for work where past decisions may matter, look at the INDEX before starting and open only related memories; do not read for small unrelated work". Adding to CLAUDE.md / AGENTS.md is not required | Measured (`experiments/RESULTS.md`). The description is always in context. "Always read" was softened because the user did not want over-reading to slow work down |
+| Layout in the target repo | With the skills CLI or by hand, the skill lives in `.agents/skills/team-memory/` and `.claude/skills/team-memory` is a symlink. Teams using only Claude Code can also use the plugin marketplace (`--scope project`) | Codex looks in `.agents/skills`, Claude Code in `.claude/skills`. The symlink was confirmed to work on a real machine |
+| File name | `YYYY-MM-DD-<slug>.md`. The date is the first day. Never renamed | Codex's proposal. Sequence numbers collide in parallel PRs (a weakness of ADRs) |
+| Frontmatter | Required: title / author / date / status. Optional: agent / updated / related | Between the PM's proposal (5 keys) and Codex's (agent required). agent is optional because the PM does not use it |
+| author | GitHub login of the person who directed the work. Taken from the repo's git email (GitHub noreply form); otherwise `gh config get -h github.com user` or `gh api user`; ask if none works | The user's proposal, following the PM's (the person who directed, not the agent). Even people who switch between two accounts get the same account as their commits in that repo |
+| Body | Conclusion / Evidence / History / Revisit when / Internal notes. All but Conclusion are optional | The PM's proposal (conclusion in words for outsiders, internal notes kept apart) and Codex's (scope, conditions for revisiting) |
+| Language | The skill text is in English. Memories are written in the language of the existing memories in `.memory/`, or, when there are none, the language of the person working. Headings and the INDEX title have English and Japanese forms that are read as the same. Frontmatter keys and fixed values stay in English; `title` follows the memory's language | Decided 2026-10-27 to make the skill usable for English-speaking teams (issue #1). Teams already writing Japanese memories keep working without rewriting them. Re-measured after the translation (`experiments/RESULTS.md` section 5) |
+| Additional checks | If the conclusion is the same, append to the existing file and set `updated`, so filtering by period does not miss them | Codex review |
+| When the conclusion changes | Rewrite the conclusion in the same file and add one line to `History` with the date, the previous conclusion and the reason. Fix related repo documents and other memories in the same PR. Use superseded only when merging into another file (including merging duplicates on the same topic) | The user's decision (10/26). It first followed ADRs: "new file, mark the old one superseded, never rewrite the old conclusion". Changed so that a change of direction is easy to reflect in both memories and documents, and files do not pile up |
+| INDEX | Only current memories, one line each. Insert in file-name order, no reformatting. On conflicts, keep both sides' lines | Codex's proposal. No automatic merge settings or generation |
+| What to write | "Does it change the next person's decisions, or save them from redoing work?" Nothing new learned, nothing written | Codex's proposal |
+| Dropped attempts | Kept in a memory-only PR | Codex's proposal |
+| As memories grow | Finding things even with many memories comes first. When the INDEX lists more than 100 memories, split into area folders right away and turn the top INDEX into a list of areas. Merged memories and those whose subject is gone go to `archive/`. If the INDEX does not show it, grep. Tidy up only when asked, in a memory-only PR | The user's decision (10/26). Putting a "last tidied" date in the INDEX was rejected because concurrent tidying would conflict. 100 is a guide: one INDEX line is about 50 tokens, so about 5k tokens per read |
+| Client material | Use Conclusion and Evidence. Do not copy internal notes, author, or issue and PR numbers. Provisional values are used, marked as provisional | The PM's proposal |
 
-## 入れなかったもの
+## What we left out
 
-- SessionStart hook での INDEX 注入: 実測でスキルの description だけで十分だったため。Claude 専用で Codex に効かない点もある。
-- INDEX の自動生成・`merge=union`: 手で解消できる規模のうちは不要。
-- `shareable` のような公開可否の項目: 書く側が誤判断しやすい（PM 案）。
-- 定期的な整理・最終整理日の記録: 整理が重なると衝突する。頼まれたときの整理と、分野分け・archive・grep で足りる。
+- Injecting the INDEX through a SessionStart hook: measurements showed the skill's description is enough. It would also only work for Claude, not Codex.
+- Generating the INDEX automatically, `merge=union`: not needed while conflicts are small enough to resolve by hand.
+- A field such as `shareable` for whether something may be shown outside: writers easily get it wrong (PM's view).
+- Scheduled tidying and recording the last tidy date: concurrent tidying conflicts. Tidying on request, splitting into areas, archive and grep are enough.
 
-## 未解決・今後
+## Open questions
 
-- 実測は小さなサンプル repo でのもの。大きな repo・長い会話の途中で読むかは、実際のプロジェクトで試して確かめる。
-- 最初に試すプロジェクト。
+- Measurements are from a small sample repo. Whether agents read memories in a large repo, or in the middle of a long conversation, needs to be checked on a real project.
+- Which project to try it on first.

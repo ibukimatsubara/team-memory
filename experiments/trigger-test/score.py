@@ -1,4 +1,4 @@
-"""results/ の各実行で、.memory を読んだか・スキルを使ったか・不採用の理由に触れたかを数える。"""
+"""For each run under results/, count whether .memory was read, whether the skill was used, and whether the answer cited the rejection."""
 import collections
 import re
 import json
@@ -10,7 +10,7 @@ rows = []
 for f in sorted(root.rglob("*.jsonl")):
     skill = memory = False
     final = ""
-    bodies = set()  # 開いた記憶の本文（INDEX 以外）
+    bodies = set()  # memory bodies opened (other than INDEX)
     duration = 0
     for line in f.read_text().splitlines():
         try:
@@ -29,7 +29,7 @@ for f in sorted(root.rglob("*.jsonl")):
         if ev.get("type") == "result":
             final = ev.get("result", "") or ""
             duration = ev.get("duration_ms", 0)
-        # Codex（codex exec --json）の形式
+        # Codex (codex exec --json) format
         item = ev.get("item") or {}
         if item.get("type") == "command_execution":
             cmd = item.get("command", "")
@@ -41,7 +41,7 @@ for f in sorted(root.rglob("*.jsonl")):
         if item.get("type") == "agent_message":
             final = item.get("text", "") or ""
     bodies.discard("INDEX.md")
-    cited = any(k in final for k in ("0.62", "0.81", "不採用", ".memory"))
+    cited = any(k in final for k in ("0.62", "0.81", "不採用", "rejected", ".memory"))
     cond, p, n = f.stem.split("-")
     rows.append((f.parent.name, cond, p, n, skill, memory, cited, len(bodies), duration))
 

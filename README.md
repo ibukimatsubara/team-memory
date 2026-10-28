@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/banner.png" alt="team-memory" width="100%"></p>
+
 # team-memory
 
 English | [日本語](README.ja.md)
@@ -16,13 +18,15 @@ team-memory keeps the following in the repo as Markdown:
 
 Memories are reviewed as part of PRs, and every agent on the team reads them. A PM can also have their own agent gather material for status meetings.
 
+<p align="center"><img src="docs/how-it-works.gif" alt="A's Claude Code writes what it tried to .memory/, and B's Claude Code reads it and avoids the same failure" width="100%"></p>
+
 ## What it solves
 
 ### Problem: someone tries an approach that was already tried and dropped
 
 A's Claude Code tried binarizing with a fixed threshold. Circles broke up in faint drawings, so A dropped it. But that history lives only in A's local conversation. The next week, B's Claude Code tries the same thing because "it should be faster", and goes through the same failure again.
 
-**Solved:** A's Claude Code writes the reason for dropping it, with the numbers, to `.memory/`, and the PR is merged. Before starting, B's Claude Code looks at `INDEX.md`, opens that memory, and stops: "This was tried on 10/20 and rejected."
+**Solved:** A's Claude Code writes the reason for dropping it, with the numbers, to `.memory/`, and the PR is merged. Before starting, B's Claude Code looks at `INDEX.md`, opens that memory, and stops: "This was tried on 10/20 and rejected." The GIF above shows this flow.
 
 ### Problem: every new conversation repeats the same trial and error
 

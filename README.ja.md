@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/banner.png" alt="team-memory" width="100%"></p>
+<p align="center"><img src="docs/banner.ja.png" alt="team-memory" width="100%"></p>
 
 # team-memory
 
@@ -18,7 +18,7 @@ team-memory は、次のことを repo の中に Markdown で残します。
 
 記憶は PR に含めてレビューされ、チーム全員のエージェントが読みます。PM は、自分のエージェントに定例資料の材料を集めさせることもできます。
 
-<p align="center"><img src="docs/how-it-works.gif" alt="Aさんの Claude Code が試行錯誤を .memory/ に書き、Bさんの Claude Code がそれを読んで同じ失敗を避ける流れ" width="100%"></p>
+<p align="center"><img src="docs/how-it-works.ja.gif" alt="Aさんの Claude Code が試行錯誤を .memory/ に書き、Bさんの Claude Code がそれを読んで同じ失敗を避ける流れ" width="100%"></p>
 
 ## 解決すること
 
